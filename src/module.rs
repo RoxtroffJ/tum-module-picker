@@ -1,26 +1,27 @@
 //! Contains everything related to the [Module] struct.
 
-/// A module.
-#[derive(Debug, Clone)]
-pub struct Module {
-    id: String,
-    title: String,
-    courses: Vec<Course>,
-    exams: Vec<Exam>
-}
+use std::{
+    collections::HashMap,
+    io::BufRead,
+    sync::LazyLock,
+};
 
-/// A course.
-#[derive(Debug, Clone)]
-pub struct Course {
-    title: String,
-    number: String,
-    typ: String
-}
+use regex::Regex;
+use time::{Date, Duration, Month, PrimitiveDateTime, Time};
 
-/// An exam.
-#[derive(Debug, Clone)]
-pub struct Exam {
-    title: String,
-    number: String,
-    typ: String
-}
+pub mod module;
+
+pub mod course;
+
+pub mod exam;
+
+mod appointment;
+pub use appointment::*;
+
+mod semester;
+pub use semester::*;
+
+/// The type for a year.
+pub type Year = u16;
+/// The type for an amount of ECTS
+pub type ECTS = u16;

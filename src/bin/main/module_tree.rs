@@ -1,22 +1,32 @@
 //! Helpers for the [ModuleTree] widget.
+use crate::module_display::ModuleDisplay;
+
 use super::*;
 use iced::{
+    Element,
+    Length::{Fill, Shrink},
     widget::{
-        button, center, column, container::background, horizontal_space, mouse_area, opaque, row, stack, text_input
-    }, Color, Element, Length::{Fill, Shrink}
+        button, center, column, container::background, mouse_area, opaque,
+        stack, text, text_input,
+    },
 };
 use iced_aw::ContextMenu;
-use iced_fonts::{Nerd, nerd::to_text};
-use tum_module_picker::storage_tree::{
-    Node, Path,
-    column::{Action, Content, MetaKey, NodeState},
+use tum_module_picker::{
+    module::module::Module,
+    storage_tree::{
+        self, Node, Path,
+        column::{Action, Content, MetaKey, NodeState},
+    },
 };
 
 pub struct ModuleTree {
     content: Content<String, Module>,
-    new_menu_name: String,
+
     path: Path,
     overlay: Overlay,
+
+    new_folder_name: String,
+    new_module_content: module_display::Content,
 }
 
 #[derive(Debug, Clone)]
@@ -35,15 +45,18 @@ pub enum Message {
     NewFolderPressed(Path),
     NewModulePressed(Path),
     OverlayQuit,
+    ModuleBuilder(module_display::Action),
 }
 
 impl ModuleTree {
     pub fn new(tree: StorageTree<String, Module>) -> Self {
         Self {
             content: Content::new(tree),
-            new_menu_name: "".into(),
+            new_folder_name: "".into(),
             path: Path::default(),
             overlay: Overlay::None,
+
+            new_module_content: module_display::Content::new(Module::default()).set_all_edits(true),
         }
     }
 
@@ -51,13 +64,13 @@ impl ModuleTree {
         match message {
             Message::ModuleTree(action) => self.content.perform(action),
             Message::AddFolder(path) => {
-                let name = std::mem::take(&mut self.new_menu_name);
+                let name = std::mem::take(&mut self.new_folder_name);
                 let new_folder =
                     StorageTree::node(MetaKey::new(name, NodeState::default()), Vec::new());
                 self.content.add(new_folder, &path);
                 return Task::done(Message::ModuleTree(Action::Expand(path)));
             }
-            Message::EditAddFolder(text) => self.new_menu_name = text,
+            Message::EditAddFolder(text) => self.new_folder_name = text,
             Message::AddModule(_, _) => todo!(),
             Message::NewFolderPressed(path) => {
                 self.path = path;
@@ -68,46 +81,45 @@ impl ModuleTree {
                 self.overlay = Overlay::Module
             }
             Message::OverlayQuit => self.overlay = Overlay::None,
+            Message::ModuleBuilder(action) => self.new_module_content.perform(action),
         }
         Task::none()
     }
 
     pub fn view(&self) -> Element<'_, Message> {
-        let underlay = container(storage_tree::column::Column::new(
-            &self.content,
-            Message::ModuleTree,
-            |name, path| folder_to_element(name, path),
-            |_, _| text("Foo").into(),
+        let underlay = container(
+            storage_tree::column::Column::new(
+                &self.content,
+                Message::ModuleTree,
+                |name, path| folder_to_element(name, path),
+                |_, _| text("Foo").into(),
+            )
+            .space(MENU_OFFSET)
+            .icons_default(PADDING),
         )
-        .space(20.)
-        .icon(
-            || {
-                row![
-                    to_text(Nerd::TriangleRight),
-                    horizontal_space().width(PADDING)
-                ]
-                .into()
-            },
-            || {
-                row![
-                    to_text(Nerd::TriangleDown),
-                    horizontal_space().width(PADDING)
-                ]
-                .into()
-            },
-        ))
         .width(Fill)
         .height(Fill)
         .into();
 
         let overlay = match self.overlay {
             Overlay::None => return underlay,
-            Overlay::Folder => container(column![
-                text("New folder name:"),
-                text_input("Type here...", &self.new_menu_name).on_input(Message::EditAddFolder).on_submit(Message::AddFolder(self.path.clone())),
-            ].width(Shrink)),
-            Overlay::Module => todo!(),
-        }.style(|theme: &iced::Theme| background(theme.palette().background)).padding(PADDING);
+            Overlay::Folder => container(
+                column![
+                    text("New folder name:"),
+                    transparent_text_input("Type here...", &self.new_folder_name)
+                        .on_input(Message::EditAddFolder)
+                        .on_submit(Message::AddFolder(self.path.clone())),
+                ]
+                .width(Shrink),
+            ),
+            Overlay::Module => {
+                let module_display: Element<'_, _> =
+                    ModuleDisplay::new(&self.new_module_content).into();
+                container(module_display.map(Message::ModuleBuilder))
+            }
+        }
+        .style(|theme: &iced::Theme| background(theme.palette().background))
+        .padding(PADDING);
 
         modal(underlay, overlay, Message::OverlayQuit)
     }
@@ -146,18 +158,7 @@ where
     stack![
         base.into(),
         opaque(
-            mouse_area(center(opaque(content)).style(|theme| {
-                container::Style {
-                    background: Some(
-                        Color {
-                            a: 0.1,
-                            ..if theme.extended_palette().is_dark {Color::WHITE} else {Color::BLACK}
-                        }
-                        .into(),
-                    ),
-                    ..container::Style::default()
-                }
-            }))
+            mouse_area(center(opaque(content)).style(|_| background(INACTIVE_COLOR)))
             .on_press(on_blur)
         )
     ]

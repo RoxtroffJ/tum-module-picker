@@ -8,6 +8,7 @@ use std::{
 use iced::{
     alignment::Vertical, widget::{button, column, horizontal_space, row}, Element, Length
 };
+use iced_fonts::required::{to_text, RequiredIcons};
 
 use super::*;
 
@@ -22,15 +23,17 @@ pub struct Column<'a, K, T, Message> {
 }
 
 /// Content and state of a [Column]
+#[derive(Debug)]
 pub struct Content<K, T> {
     st: StorageTree<MetaKey<K, NodeState>, T>,
+    just_extend_on_select: bool,
 }
 
 impl<K, T> Content<K, T> {
     /// Creates a new [Content]
     pub fn new(storage_tree: StorageTree<K, T>) -> Self {
         let st = storage_tree.map_keys(&|key| MetaKey::new(key, NodeState::new()));
-        Self { st }
+        Self { st, just_extend_on_select: true }
     }
 
     /// Performs an action on the content.
@@ -38,7 +41,7 @@ impl<K, T> Content<K, T> {
         match action {
             Action::Expand(path) => self.set_expanded(&path, true),
             Action::Collapse(path) => self.set_expanded(&path, false),
-            Action::Selected(path) => self.set_expanded(&path, true),
+            Action::Selected(path) => self.set_expanded(&path, if self.just_extend_on_select {true} else {!self.get_expanded(&path).unwrap_or(true)}),
         }
     }
 
@@ -48,6 +51,21 @@ impl<K, T> Content<K, T> {
             StorageTree::Leaf(_) => (),
             StorageTree::Node(node) => node.get_mut_key().get_mut_metadata().expanded = expanded,
         });
+    }
+
+    /// Returns whether a node is expanded or not.
+    fn get_expanded(&self, path: &Path) -> Option<bool> {
+        self.get(path).and_then(|tree| match tree {
+            StorageTree::Leaf(_) => None,
+            StorageTree::Node(node) => Some(node.get_key().get_metadata().expanded),
+        })
+    }
+
+    /// Makes it so that nodes both expand and collapse when clicked.
+    /// 
+    /// If this function is not called, they just expand when clicked.
+    pub fn retract_on_select(self) -> Self {
+        Self { just_extend_on_select: false, ..self }
     }
 }
 
@@ -128,6 +146,29 @@ impl<'a, K, T, Message> Column<'a, K, T, Message> {
             None => self,
             Some((collapsed, expanded)) => self.icon(collapsed, expanded),
         }
+    }
+
+    /// Puts default icons for collapsed and expanded.
+    pub fn icons_default<P: Into<Length> + Copy + 'a>(self, padding: P) -> Self 
+    where Message: 'a 
+    {
+        self.icon(
+            move || {
+                let result: Element<'a, Message> = row![
+                    to_text(RequiredIcons::CaretRightFill),
+                    horizontal_space().width(padding)
+                ]
+                .into();
+                result
+            },
+            move || {
+                row![
+                    to_text(RequiredIcons::CaretDownFill),
+                    horizontal_space().width(padding)
+                ]
+                .into()
+            },
+        )
     }
 
     /// Sets by how much the children of a node are offset compared to said node.
