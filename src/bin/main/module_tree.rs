@@ -3,16 +3,11 @@ use crate::module_display::ModuleDisplay;
 
 use super::*;
 use iced::{
-    Element,
-    Length::{Fill, Shrink},
-    widget::{
-        button, center, column, container::background, mouse_area, opaque,
-        stack, text, text_input,
-    },
+    widget::{button, center, column, container::background, horizontal_rule, mouse_area, opaque, stack, text}, Element, Length::{Fill, Shrink}
 };
 use iced_aw::ContextMenu;
 use tum_module_picker::{
-    module::module::Module,
+    module::Module,
     storage_tree::{
         self, Node, Path,
         column::{Action, Content, MetaKey, NodeState},
@@ -41,7 +36,7 @@ pub enum Message {
     ModuleTree(storage_tree::column::Action),
     AddFolder(Path),
     EditAddFolder(String),
-    AddModule(Module, Path),
+    AddModule(Path),
     NewFolderPressed(Path),
     NewModulePressed(Path),
     OverlayQuit,
@@ -50,13 +45,15 @@ pub enum Message {
 
 impl ModuleTree {
     pub fn new(tree: StorageTree<String, Module>) -> Self {
+        let new_module_content= module_display::Content::new(Module::default()).with_all_edits(true);
+        
         Self {
             content: Content::new(tree),
             new_folder_name: "".into(),
             path: Path::default(),
             overlay: Overlay::None,
 
-            new_module_content: module_display::Content::new(Module::default()).set_all_edits(true),
+            new_module_content,
         }
     }
 
@@ -71,7 +68,7 @@ impl ModuleTree {
                 return Task::done(Message::ModuleTree(Action::Expand(path)));
             }
             Message::EditAddFolder(text) => self.new_folder_name = text,
-            Message::AddModule(_, _) => todo!(),
+            Message::AddModule(_) => self.new_module_content.set_all_edits(false),
             Message::NewFolderPressed(path) => {
                 self.path = path;
                 self.overlay = Overlay::Folder
@@ -81,7 +78,7 @@ impl ModuleTree {
                 self.overlay = Overlay::Module
             }
             Message::OverlayQuit => self.overlay = Overlay::None,
-            Message::ModuleBuilder(action) => self.new_module_content.perform(action),
+            Message::ModuleBuilder(action) => return self.new_module_content.perform(action).map(Message::ModuleBuilder),
         }
         Task::none()
     }
@@ -115,7 +112,15 @@ impl ModuleTree {
             Overlay::Module => {
                 let module_display: Element<'_, _> =
                     ModuleDisplay::new(&self.new_module_content).into();
-                container(module_display.map(Message::ModuleBuilder))
+                container(
+                    column![
+                        module_display.map(Message::ModuleBuilder),
+                        horizontal_rule(PADDING),
+                        button(bald_text("Create Module").width(Fill).center())
+                            .on_press(Message::AddModule(self.path.clone()))
+                            .style(button::success)
+                    ],
+                )
             }
         }
         .style(|theme: &iced::Theme| background(theme.palette().background))
@@ -159,7 +164,7 @@ where
         base.into(),
         opaque(
             mouse_area(center(opaque(content)).style(|_| background(INACTIVE_COLOR)))
-            .on_press(on_blur)
+                .on_press(on_blur)
         )
     ]
     .into()

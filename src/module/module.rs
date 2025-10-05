@@ -1,6 +1,10 @@
 //! [Module] struct and macros that comes with it.
 
+use crate::displayable_option::DisplayOption;
+
 use super::{course::*, exam::*, *};
+
+mod macros;
 
 /// A module.
 #[derive(Debug, Clone, Default)]
@@ -41,7 +45,7 @@ pub struct Module {
     #[allow(missing_docs)]
     pub subtitle: String,
     #[allow(missing_docs)]
-    pub duration: Option<Duration>,
+    pub duration: DisplayOption<Duration>,
     #[allow(missing_docs)]
     pub occurence: String,
     #[allow(missing_docs)]
@@ -85,6 +89,7 @@ pub struct Module {
 }
 
 /// Enum representing the different fields.
+#[derive(Debug, Clone, Copy)]
 pub enum Field {
     // === Overview ===
     #[allow(missing_docs)]
@@ -92,7 +97,7 @@ pub enum Field {
     #[allow(missing_docs)]
     Id,
     #[allow(missing_docs)]
-    Ects,
+    ECTS,
     #[allow(missing_docs)]
     Version,
     #[allow(missing_docs)]
@@ -408,204 +413,4 @@ impl Module {
     pub fn get_mut_responsible_bis(&mut self) -> &mut String {
         &mut self.responsible_bis
     }
-}
-
-/// Gets a reference to the field `field' of `v`.
-#[macro_export]
-macro_rules! module_get_field {
-    ($v:expr, $field:expr) => {
-        let e: Field = $field;
-        use Field::*;
-        match e {
-            // === Overview ===
-            Name => $v.get_name(),
-            Id => $v.get_id(),
-            Ects => $v.get_ects(),
-            Version => $v.get_version(),
-            ValidFrom => $v.get_valid_from(),
-            ValidUntil => $v.get_valid_until(),
-            Responsible => $v.get_responsible(),
-            Organisation => $v.get_organisation(),
-            Note => $v.get_note(),
-            // === Courses and exams ===
-            Courses => $v.get_courses(),
-            Exams => $v.get_exams(),
-            // === Description ===
-            // General data
-            ModuleLevel => $v.get_module_level(),
-            Abbreviation => $v.get_abbreviation(),
-            Subtitle => $v.get_subtitle(),
-            Duration => $v.get_duration(),
-            Occurence => $v.get_occurence(),
-            Language => $v.get_language(),
-            RelatedPrograms => $v.get_related_programs(),
-            // Work load
-            TotalHours => $v.get_total_hours(),
-            ContactHours => $v.get_contact_hours(),
-            SelfStudyHours => $v.get_self_study_hours(),
-            // Study and examination performance
-            DescrOfAchievementAssessmentMethods => $v.get_descr_of_achievement_assessment_methods(),
-            ExamRetakeNextSemester => $v.get_exam_retake_next_semester(),
-            ExamRetakeEndSemester => $v.get_exam_retake_end_semester(),
-            // Description
-            Prerequisites => $v.get_prerequisites(),
-            IntendedLearningOutcomes => $v.get_intended_learning_outcomes(),
-            Content => $v.get_content(),
-            TeachingAndLearningMethods => $v.get_teaching_and_learning_methods(),
-            Media => $v.get_media(),
-            ReadingList => $v.get_reading_list(),
-            // Responsible for module
-            ResponsibleBis => $v.get_responsible_bis(),
-        }
-    };
-}
-
-/// Same as [get_field] but returns a mutable reference.
-#[macro_export]
-macro_rules! module_get_mut_field {
-    ($v:expr, $e:expr) => {{
-        let e: Field = $e;
-        use Field::*;
-        match e {
-            // === Overview ===
-            Name => $v.get_mut_name(),
-            Id => $v.get_mut_id(),
-            Ects => $v.get_mut_ects(),
-            Version => $v.get_mut_version(),
-            ValidFrom => $v.get_mut_valid_from(),
-            ValidUntil => $v.get_mut_valid_until(),
-            Responsible => $v.get_mut_responsible(),
-            Organisation => $v.get_mut_organisation(),
-            Note => $v.get_mut_note(),
-            // === Courses and exams ===
-            Courses => $v.get_mut_courses(),
-            Exams => $v.get_mut_exams(),
-            // === Description ===
-            // General data
-            ModuleLevel => $v.get_mut_module_level(),
-            Abbreviation => $v.get_mut_abbreviation(),
-            Subtitle => $v.get_mut_subtitle(),
-            Duration => $v.get_mut_duration(),
-            Occurence => $v.get_mut_occurence(),
-            Language => $v.get_mut_language(),
-            RelatedPrograms => $v.get_mut_related_programs(),
-            // Work load
-            TotalHours => $v.get_mut_total_hours(),
-            ContactHours => $v.get_mut_contact_hours(),
-            SelfStudyHours => $v.get_mut_self_study_hours(),
-            // Study and examination performance
-            DescrOfAchievementAssessmentMethods => {
-                $v.get_mut_descr_of_achievement_assessment_methods()
-            }
-            ExamRetakeNextSemester => $v.get_mut_exam_retake_next_semester(),
-            ExamRetakeEndSemester => $v.get_mut_exam_retake_end_semester(),
-            // Description
-            Prerequisites => $v.get_mut_prerequisites(),
-            IntendedLearningOutcomes => $v.get_mut_intended_learning_outcomes(),
-            Content => $v.get_mut_content(),
-            TeachingAndLearningMethods => $v.get_mut_teaching_and_learning_methods(),
-            Media => $v.get_mut_media(),
-            ReadingList => $v.get_mut_reading_list(),
-            // Responsible for module
-            ResponsibleBis => $v.get_mut_responsible_bis(),
-        }
-    }};
-}
-
-/// Gets the enum corresponding to the field.
-#[macro_export]
-macro_rules! module_into_enum {
-    (name) => {
-        Field::Name
-    };
-    (id) => {
-        Field::Id
-    };
-    (ects) => {
-        Field::Ects
-    };
-    (version) => {
-        Field::Version
-    };
-    (valid_from) => {
-        Field::ValidFrom
-    };
-    (valid_until) => {
-        Field::ValidUntil
-    };
-    (responsible) => {
-        Field::Responsible
-    };
-    (organisation) => {
-        Field::Organisation
-    };
-    (note) => {
-        Field::Note
-    };
-    (courses) => {
-        Field::Courses
-    };
-    (exams) => {
-        Field::Exams
-    };
-    (module_level) => {
-        Field::ModuleLevel
-    };
-    (abbreviation) => {
-        Field::Abbreviation
-    };
-    (subtitle) => {
-        Field::Subtitle
-    };
-    (duration) => {
-        Field::Duration
-    };
-    (occurence) => {
-        Field::Occurence
-    };
-    (language) => {
-        Field::Language
-    };
-    (related_programs) => {
-        Field::RelatedPrograms
-    };
-    (total_hours) => {
-        Field::TotalHours
-    };
-    (contact_hours) => {
-        Field::ContactHours
-    };
-    (self_study_hours) => {
-        Field::SelfStudyHours
-    };
-    (descr_of_achievement_assessment_methods) => {
-        Field::DescrOfAchievementAssessmentMethods
-    };
-    (exam_retake_next_semester) => {
-        Field::ExamRetakeNextSemester
-    };
-    (exam_retake_end_semester) => {
-        Field::ExamRetakeEndSemester
-    };
-    (prerequisites) => {
-        Field::Prerequisites
-    };
-    (intended_learning_outcomes) => {
-        Field::IntendedLearningOutcomes
-    };
-    (content) => {
-        Field::Content
-    };
-    (teaching_and_learning_methods) => {
-        Field::TeachingAndLearningMethods
-    };
-    (media) => {
-        Field::Media
-    };
-    (reading_list) => {
-        Field::ReadingList
-    };
-    (responsible_bis) => {
-        Field::ResponsibleBis
-    };
 }

@@ -6,7 +6,7 @@ use std::{
 };
 
 use iced::{
-    alignment::Vertical, widget::{button, column, horizontal_space, row}, Element, Length
+    alignment::Vertical, widget::{button, column, horizontal_space, row}, Element, Length, Pixels
 };
 use iced_fonts::required::{to_text, RequiredIcons};
 
@@ -20,6 +20,8 @@ pub struct Column<'a, K, T, Message> {
     on_interaction: Box<dyn Fn(Action) -> Message + 'a>,
     key_to_element: Box<dyn Fn(&'a Node<MetaKey<K, NodeState>, T>, Path) -> Element<'a, Message> + 'a>,
     value_to_element: Box<dyn Fn(&'a T, Path) -> Element<'a, Message> + 'a>,
+
+    spacing: Pixels,
 }
 
 /// Content and state of a [Column]
@@ -117,6 +119,7 @@ impl<'a, K, T, Message> Column<'a, K, T, Message> {
             on_interaction: Box::new(on_interaction),
             key_to_element: Box::new(key_to_element),
             value_to_element: Box::new(value_to_element),
+            spacing: 0.into(),
         }
     }
 
@@ -171,9 +174,14 @@ impl<'a, K, T, Message> Column<'a, K, T, Message> {
         )
     }
 
-    /// Sets by how much the children of a node are offset compared to said node.
+    /// Sets by how much the children of a node are offset to the right compared to said node.
     pub fn space(self, space: f32) -> Self {
         Self { space, ..self }
+    }
+
+    /// Sets the spacing of the inner column.
+    pub fn spacing(self, spacing: impl Into<Pixels>) -> Self {
+        Self {spacing: spacing.into(), ..self}
     }
 }
 
@@ -183,6 +191,7 @@ impl<K, T> StorageTree<MetaKey<K, NodeState>, T> {
         &'a self,
         icons: &Option<Icons<'a, Message>>,
         space: f32,
+        spacing: Pixels,
         on_interaction: &Oi,
         key_to_element: &Ok,
         value_to_element: &Ov,
@@ -226,6 +235,7 @@ impl<K, T> StorageTree<MetaKey<K, NodeState>, T> {
                         tree.to_element(
                             icons,
                             space,
+                            spacing,
                             on_interaction,
                             key_to_element,
                             value_to_element,
@@ -239,6 +249,7 @@ impl<K, T> StorageTree<MetaKey<K, NodeState>, T> {
                             iced::widget::Column::from_iter(expansion)
                         ]
                     ]
+                    .spacing(spacing)
                     .into()
                 } else {
                     row
@@ -253,6 +264,7 @@ impl<'a, K, T, Message: Clone + 'a> From<Column<'a, K, T, Message>> for Element<
         value.content.to_element(
             &value.icons,
             value.space,
+            value.spacing,
             &value.on_interaction,
             &value.key_to_element,
             &value.value_to_element,

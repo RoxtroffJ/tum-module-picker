@@ -9,17 +9,18 @@ use std::{
 use regex::Regex;
 use time::{Date, Duration, Month, PrimitiveDateTime, Time};
 
-pub mod module;
+mod module;
+pub use module::*;
 
 pub mod course;
 
 pub mod exam;
 
-mod appointment;
-pub use appointment::*;
+pub mod appointment;
+use appointment::*;
 
-mod semester;
-pub use semester::*;
+pub mod semester;
+use semester::*;
 
 /// The type for a year.
 pub type Year = u16;

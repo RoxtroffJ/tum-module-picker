@@ -17,8 +17,8 @@ use crate::module_tree::ModuleTree;
 mod module_display;
 mod module_tree;
 
-const PADDING: u16 = 10;
-const MENU_OFFSET: f32 = 20.;
+pub const PADDING: u16 = 10;
+pub const MENU_OFFSET: f32 = 20.;
 
 struct App {
     module_tree: ModuleTree,
@@ -31,9 +31,10 @@ enum Message {
 
 impl App {
     fn new() -> (Self, Task<Message>) {
-        (
+        let module_tree = ModuleTree::new(StorageTree::node("Aerospace".into(), Vec::new()));
+        (   
             Self {
-                module_tree: ModuleTree::new(StorageTree::node("Aerospace".into(), Vec::new())),
+                module_tree,
             },
             Task::none(),
         )
@@ -74,23 +75,10 @@ where
     })
 }
 
-/// Container style that has its background colored by the given color.
-/// 
-/// Uses the alpha channel to define by how much the background shall be colored.
-
-pub fn colored_background(color: Color) -> impl Fn(&Theme) -> container::Style {
+/// Container style that is the same as the provided one except for the color of the background.
+pub fn backgrounded(style: impl Fn(&Theme) -> container::Style, color: Color) -> impl Fn(&Theme) -> container::Style {
     move |theme| {
-        let background = theme.palette().background;
-
-        macro_rules! comp {
-            ($field:ident) => {
-                color.$field * color.a + background.$field * (1. - color.a)
-            };
-        }
-
-        let new_background = Color::from_rgba(comp!(r), comp!(g), comp!(b), background.a);
-
-        container::background(new_background)
+        container::Style {background: Some(color.into()), ..style(theme)}
     }
 }
 
