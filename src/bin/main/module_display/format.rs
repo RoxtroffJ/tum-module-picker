@@ -1,6 +1,3 @@
-use super::*;
-use tum_module_picker::storage_tree::column::{Action as STAction, Content as STContent};
-
 /// Either text or text input.
 ///
 /// # Arguments:
@@ -68,61 +65,6 @@ macro_rules! non_str_texter {
     }};
 }
 
-/// Section header with given label, and indication of error.
-pub fn section_header<'a, Action: 'a>(label: &'a str, is_error: bool) -> Element<'a, Action> {
-    let mut result = container(label).width(Fill).padding(PADDING);
-
-    if is_error {
-        result = result.style(backgrounded(container::rounded_box, ERROR_COLOR))
-    } else {
-        result = result.style(container::rounded_box)
-    }
-
-    result.into()
-}
-
-/// A collapsable section build from a [storage_tree::Content](STContent) that has a single node with a single child.
-pub fn section<'a, Action: Clone + 'a, K, T: 'a>(
-    label: &'a str,
-    content_builder: impl Fn(&'a T) -> Element<'a, Action> + 'a,
-    is_error: bool,
-    is_editable: Option<(
-        &'a text_editor::Content,
-        impl Fn(text_editor::Action) -> Action + 'a,
-    )>,
-    st_content: &'a STContent<K, T>,
-    message: impl Fn(STAction) -> Action + 'a,
-) -> Element<'a, Action> {
-    let mut result = row![
-        container(
-            STColumn::new(
-                st_content,
-                message,
-                move |_, _| section_header(label, is_error),
-                move |x, _| content_builder(x)
-            )
-            .space(MENU_OFFSET)
-            .spacing(PADDING)
-            .icons_default(PADDING)
-        )
-        .width(FillPortion(2))
-    ]
-    .height(Shrink)
-    .spacing(PADDING);
-
-    match is_editable {
-        Some((content, message)) => {
-            result = result.push(
-                container(TextEditor::new(content).height(Fill).on_action(message))
-                    .width(FillPortion(1)),
-            )
-        }
-        None => (),
-    };
-
-    result.into()
-}
-
 /// Same as [column!] but formatted for the content of a section.
 #[macro_export]
 macro_rules! content_column {
@@ -134,3 +76,5 @@ macro_rules! content_column {
         }
     };
 }
+
+pub mod section;

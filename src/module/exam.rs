@@ -1,3 +1,5 @@
+//! A module exam.
+
 use super::*;
 
 /// An exam.

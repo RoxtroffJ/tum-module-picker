@@ -1,9 +1,6 @@
 //! The overview section of the module display.
 
-use std::{
-    borrow::{Borrow, BorrowMut},
-    ops::{Deref, DerefMut},
-};
+use std::ops::{Deref, DerefMut};
 
 use iced::{
     Alignment::Center,
@@ -21,15 +18,15 @@ use tum_module_picker::{
 };
 
 use crate::{
-    bald_text, content_column, if_is_editable_opt, is_error, module_display::section,
+    bald_text, content_column,
+    module_display::{Edit, section::*},
     non_str_texter, set_non_str_field, set_str_field, texter,
 };
 
 /// Content of the [Overview].
 #[derive(Debug)]
 pub struct Content {
-    overview_content: STContent<(), ()>,
-    editable: Option<Editable>,
+    overview_content: STContent<(), Option<Editable>>,
 }
 
 mod editable;
@@ -57,9 +54,11 @@ impl Content {
     /// Creates a new [Content].
     pub fn new() -> Self {
         Self {
-            overview_content: STContent::new(StorageTree::node((), [StorageTree::leaf(())].into()))
-                .retract_on_select(),
-            editable: None,
+            overview_content: STContent::new(StorageTree::node(
+                (),
+                [StorageTree::leaf(None)].into(),
+            ))
+            .retract_on_select(),
         }
     }
 
@@ -71,19 +70,22 @@ impl Content {
 
     /// Sets all the edits to a value.
     pub fn set_all_edits(&mut self, value: bool, module: &Module) {
-        if self.editable.as_ref().is_none() && !value {
-            return;
-        }
+        self.mut_leaf_iter()
+            .map(|editable| {
+                if editable.as_ref().is_none() && !value {
+                    return;
+                }
 
-        self.editable.get_or_insert(Editable::new(module)).set_all(value)
+                editable.get_or_insert(Editable::new(module)).set_all(value)
+            })
+            .collect()
     }
 
     /// Views the [Content] by turning it into an element.
     pub fn view<'a>(&'a self, module: &'a Module) -> Element<'a, Action> {
-        let editable = &self.editable;
         section(
-            "Overview",
-            move |_| {
+            |_| "Overview",
+            move |editable| {
                 content_column![
                     // ECTS
                     row![
@@ -188,18 +190,8 @@ impl Content {
                 ]
                 .into()
             },
-            is_error!(editable, ects_error, valid_from_error, valid_until_error),
-            if_is_editable_opt!(
-                editable,
-                (&editable.as_ref().unwrap().overview_content, Action::Editor),
-                ects,
-                version,
-                valid_from,
-                valid_until,
-                responsible,
-                organisation,
-                note
-            ),
+            |editable| editable.as_ref().and_then(|e| edit_text_editor(e, &e.overview_content, Action::Editor)),
+            |editable| editable.as_ref().map(Edit::has_one_error).unwrap_or(false),
             self,
             Action::StorageTree,
         )
@@ -215,7 +207,7 @@ impl Content {
         name_edit: impl Fn(String) -> Message,
         id_edit: impl Fn(String) -> Message,
     ) -> Task<Message> {
-        let editable = &mut self.editable;
+        let editable = self.mut_leaf_iter().next().map(Option::as_mut).flatten();
         match action {
             Action::StorageTree(action) => self.overview_content.perform(action),
 
@@ -291,32 +283,20 @@ impl Content {
 
 mod editor_perform;
 
-impl AsRef<STContent<(), ()>> for Content {
-    fn as_ref(&self) -> &STContent<(), ()> {
+impl AsRef<STContent<(), Option<Editable>>> for Content {
+    fn as_ref(&self) -> &STContent<(), Option<Editable>> {
         &**self
     }
 }
 
-impl AsMut<STContent<(), ()>> for Content {
-    fn as_mut(&mut self) -> &mut STContent<(), ()> {
-        &mut **self
-    }
-}
-
-impl Borrow<STContent<(), ()>> for Content {
-    fn borrow(&self) -> &STContent<(), ()> {
-        &**self
-    }
-}
-
-impl BorrowMut<STContent<(), ()>> for Content {
-    fn borrow_mut(&mut self) -> &mut STContent<(), ()> {
+impl AsMut<STContent<(), Option<Editable>>> for Content {
+    fn as_mut(&mut self) -> &mut STContent<(), Option<Editable>> {
         &mut **self
     }
 }
 
 impl Deref for Content {
-    type Target = STContent<(), ()>;
+    type Target = STContent<(), Option<Editable>>;
 
     fn deref(&self) -> &Self::Target {
         &self.overview_content

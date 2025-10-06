@@ -3,7 +3,7 @@ use crate::module_display::ModuleDisplay;
 
 use super::*;
 use iced::{
-    widget::{button, center, column, container::background, horizontal_rule, mouse_area, opaque, stack, text}, Element, Length::{Fill, Shrink}
+    widget::{button, center, column, container::background, horizontal_rule, mouse_area, opaque, scrollable, stack, text}, Element, Length::{Fill, Shrink}
 };
 use iced_aw::ContextMenu;
 use tum_module_picker::{
@@ -113,13 +113,13 @@ impl ModuleTree {
                 let module_display: Element<'_, _> =
                     ModuleDisplay::new(&self.new_module_content).into();
                 container(
-                    column![
+                    scrollable(column![
                         module_display.map(Message::ModuleBuilder),
                         horizontal_rule(PADDING),
                         button(bald_text("Create Module").width(Fill).center())
                             .on_press(Message::AddModule(self.path.clone()))
                             .style(button::success)
-                    ],
+                    ]).spacing(PADDING),
                 )
             }
         }

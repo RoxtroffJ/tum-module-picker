@@ -3,10 +3,8 @@ use crate::*;
 use iced::{
     Alignment::{self},
     Element,
-    Length::*,
-    widget::{TextEditor, column, container, horizontal_rule, horizontal_space, row, text_editor},
+    widget::{column, horizontal_rule, horizontal_space, row},
 };
-use tum_module_picker::storage_tree::column::Column as STColumn;
 
 mod editable;
 pub use editable::*;
@@ -32,7 +30,7 @@ pub use format::*;
 
 mod overview;
 
-
+mod description;
 
 impl<'a> From<ModuleDisplay<'a>> for Element<'a, Action> {
     fn from(value: ModuleDisplay<'a>) -> Self {
@@ -54,7 +52,8 @@ impl<'a> From<ModuleDisplay<'a>> for Element<'a, Action> {
         // ==== OVERVIEW ====
 
         let overview = content.overview_content.view(content).map(Action::Overview);
+        let description = content.description_content.view(content).map(Action::Description);
 
-        column![banner, horizontal_rule(PADDING), overview].into()
+        column![banner, horizontal_rule(PADDING), overview, description].into()
     }
 }

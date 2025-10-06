@@ -1,12 +1,12 @@
 use std::num::ParseIntError;
 
 use iced::widget::text_editor;
-use tum_module_picker::{displayable_option::{opt_to_string, DisplayOption}, module::{semester, Module}};
+use tum_module_picker::{displayable_option::opt_to_string, module::{semester, Module}};
 
 use crate::editable_maker;
 
 editable_maker! {
-    pub(super),
+    pub,
     Editable,
     ects, version, valid_from, valid_until, responsible, organisation, note ;
 

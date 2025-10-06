@@ -1,7 +1,4 @@
 //! [Module] struct and macros that comes with it.
-
-use crate::displayable_option::DisplayOption;
-
 use super::{course::*, exam::*, *};
 
 mod macros;
@@ -45,7 +42,7 @@ pub struct Module {
     #[allow(missing_docs)]
     pub subtitle: String,
     #[allow(missing_docs)]
-    pub duration: DisplayOption<Duration>,
+    pub duration: String,
     #[allow(missing_docs)]
     pub occurence: String,
     #[allow(missing_docs)]
@@ -270,11 +267,11 @@ impl Module {
         &mut self.subtitle
     }
     /// Gets a reference to the module's duration field.
-    pub fn get_duration(&self) -> &Option<Duration> {
+    pub fn get_duration(&self) -> &String {
         &self.duration
     }
     /// Gets a mutable reference to the module's duration field.
-    pub fn get_mut_duration(&mut self) -> &mut Option<Duration> {
+    pub fn get_mut_duration(&mut self) -> &mut String {
         &mut self.duration
     }
     /// Gets a reference to the module's occurence field.

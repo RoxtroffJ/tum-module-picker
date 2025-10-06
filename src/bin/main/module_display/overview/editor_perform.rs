@@ -4,10 +4,7 @@ use std::ops::Deref;
 use iced::{Task, advanced::graphics::futures::MaybeSend, widget::text_editor};
 use tum_module_picker::{
     borrow_map::BorrowMap,
-    module::{
-        semester::Semester,
-        {self, Field},
-    },
+    module::semester::Semester,
     sectioned_lines::get_sections,
 };
 
@@ -26,19 +23,6 @@ enum SideSections {
 }
 
 impl SideSections {
-    fn to_field(&self) -> module::Field {
-        match self {
-            Self::Name => Field::Name,
-            Self::Id => Field::Id,
-            Self::ECTS => Field::ECTS,
-            Self::Version => Field::Version,
-            Self::Responsible => Field::Responsible,
-            Self::Organisation => Field::Organisation,
-            Self::Note => Field::Note,
-            _ => panic!("Field not found"),
-        }
-    }
-
     fn to_action(&self) -> impl Fn(String) -> Action {
         match self {
             SideSections::ECTS => Action::ECTS,
@@ -53,7 +37,7 @@ impl SideSections {
 
 pub(super) fn perform<Message: MaybeSend + 'static>(
     action: text_editor::Action,
-    editable: &mut Option<Editable>,
+    editable: Option<&mut Editable>,
 
     on_action: &impl Fn(Action) -> Message,
     name_edit: &impl Fn(String) -> Message,

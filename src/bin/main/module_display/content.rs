@@ -22,6 +22,7 @@ mod perform;
 pub struct Content {
     pub module: Module,
     pub overview_content: overview::Content,
+    pub description_content: description::Content,
     pub editable: Option<Editable>,
 }
 impl Content {
@@ -30,6 +31,7 @@ impl Content {
         Self {
             module,
             overview_content: overview::Content::new(),
+            description_content: description::Content::new(),
             editable: None,
         }
     }
@@ -44,6 +46,7 @@ impl Content {
     pub fn set_all_edits(&mut self, value: bool) {
         
         self.overview_content.set_all_edits(value, &self.module);
+        self.description_content.set_all_edits(value, &self.module);
 
         if self.editable.as_ref().is_none() && !value {
             return;

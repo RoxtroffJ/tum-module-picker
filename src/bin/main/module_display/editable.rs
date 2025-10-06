@@ -1,9 +1,35 @@
 use super::*;
 
+pub trait Edit {
+    /// Makes all the fields editable or not and returns self.
+    fn with_all(mut self, value: bool) -> Self
+    where
+        Self: Sized,
+    {
+        self.set_all(value);
+        self
+    }
+
+    /// Makes all the fields editable or not.
+    fn set_all(&mut self, value: bool);
+
+    /// Indicates if at least one of the fields is editable.
+    fn has_one_editable(&self) -> bool;
+
+    /// Indicates if at least one of the non string fields has a parsing error.
+    fn has_one_error(&self) -> bool;
+}
+
 #[macro_export]
 macro_rules! editable_maker {
-    ($pub:vis, $name:ident, $($fields:ident),* ; $($non_str_fields_str:ident $non_str_fields_err:ident $err:ty),* ; $($others:ident $type:ty);*) => {
-        #[derive(Debug)]
+    (
+        $pub:vis,
+        $name:ident $($derive:ident) *,
+        $($fields:ident),* ;
+        $($non_str_fields_str:ident $non_str_fields_err:ident $err:ty),* ;
+        $($others:ident $type:ty);*
+    ) => {
+        #[derive(Debug, $($derive),*)]
         $pub struct $name {
             $(pub $fields: bool,) *
 
@@ -12,35 +38,49 @@ macro_rules! editable_maker {
             $(pub $others: $type,) *
         }
 
-        impl $name {
-            pub fn with_all(self, value: bool) -> Self {
-                Self {
-                    $($fields: value,) *
-                    ..self
-                }
-            }
-
-            pub fn set_all(&mut self, value: bool) {
+        impl crate::module_display::Edit for $name {
+            fn set_all(&mut self, value: bool) {
                 $(self.$fields = value;) *
             }
 
-            pub fn has_one_editable(&self) -> bool {
+            fn has_one_editable(&self) -> bool {
                 $(self.$fields || )*false
+            }
+
+            fn has_one_error(&self) -> bool {
+                $(self.$non_str_fields_err.is_some() || )*false
+            }
+        }
+    };
+    (
+        $pub:vis,
+        $name:ident $($derive:ident) *,
+        $($fields:ident),* ;
+        $($others:ident $type:ty = $val:expr);*
+    ) => {
+        editable_maker!{$pub, $name $($derive) *, $($fields),* ;; $($others $type);*}
+
+        impl $name {
+            pub fn new() -> Self {
+                Self {
+                    $($fields: false,) *
+                    $($others: $val,) *
+                }
             }
         }
     };
 }
 
-editable_maker!{
+editable_maker! {
     pub,
     Editable,
     name, id,
     courses, exams,
-    module_level, abbreviation, subtitle, duration, occurence, language, related_programs,
-    total_hours, contact_hours, self_study_hours, 
+
+    total_hours, contact_hours, self_study_hours,
     descr_of_achievement_assessment_methods,
-    exam_retake_next_semester, exam_retake_end_semester, prerequisites, 
-    intended_learning_outcomes, content, teaching_and_learning_methods, media, reading_list, 
+    exam_retake_next_semester, exam_retake_end_semester, prerequisites,
+    intended_learning_outcomes, content, teaching_and_learning_methods, media, reading_list,
     responsible_bis ;
 
     ;
@@ -57,13 +97,6 @@ impl Editable {
             id: false,
             courses: false,
             exams: false,
-            module_level: false,
-            abbreviation: false,
-            subtitle: false,
-            duration: false,
-            occurence: false,
-            language: false,
-            related_programs: false,
             total_hours: false,
             contact_hours: false,
             self_study_hours: false,
@@ -159,19 +192,21 @@ macro_rules! if_is_editable {
 #[macro_export]
 macro_rules! set_str_field {
     ($module:expr, $editable:expr, $str:expr, $field: ident) => {{
-
-        if let Some(editable) = $editable && editable.$field{
+        if let Some(editable) = $editable
+            && editable.$field
+        {
             $module.$field = $str
         };
     }};
 }
 
-
 #[macro_export]
 macro_rules! set_non_str_field {
     ($module:expr, $editable:expr, $parsed:expr, $str:expr, $field: ident, $field_string:ident, $field_error:ident) => {{
         let parsed = $parsed;
-        if let Some(editable) = $editable && editable.$field{
+        if let Some(editable) = $editable
+            && editable.$field
+        {
             editable.$field_string = $str;
             match parsed {
                 Ok(val) => {

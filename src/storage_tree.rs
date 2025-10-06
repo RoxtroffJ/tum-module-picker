@@ -87,6 +87,16 @@ impl<K, T> StorageTree<K, T> {
             ),
         }
     }
+    
+    /// Iterator on the leafs of a [StorageTree].
+    pub fn leaf_iter(&self) -> LeafIterator<'_, K, T> {
+        LeafIterator { stack: vec![self] }
+    }
+
+    /// Same as [leaf_iter](Self::leaf_iter) but returns mutable references.
+    pub fn mut_leaf_iter(&mut self) -> MutLeafIterator<'_, K, T> {
+        MutLeafIterator { stack: vec![self] }
+    }
 }
 
 impl<K, T> Node<K, T> {
@@ -108,6 +118,44 @@ impl<K, T> Node<K, T> {
     /// Returns a mutable reference to the children of a node.
     pub fn get_mut_children(&mut self) -> &mut Vec<StorageTree<K, T>> {
         &mut self.children
+    }
+}
+
+/// Iterator on leafs of a tree.
+pub struct LeafIterator<'a, K, T> {
+    stack: Vec<&'a StorageTree<K, T>>
+}
+
+impl<'a, K, T> Iterator for LeafIterator<'a, K, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.stack.pop().and_then(|tree| match tree {
+            StorageTree::Leaf(leaf) => Some(leaf),
+            StorageTree::Node(node) => {
+                self.stack.extend(node.get_children());
+                self.next()
+            }
+        })
+    }
+}
+
+/// Same as [LeafIterator] but yields mutable references.
+pub struct MutLeafIterator<'a, K, T> {
+    stack: Vec<&'a mut StorageTree<K, T>>
+}
+
+impl<'a, K, T> Iterator for MutLeafIterator<'a, K, T> {
+    type Item = &'a mut T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.stack.pop().and_then(|tree| match tree {
+            StorageTree::Leaf(leaf) => Some(leaf),
+            StorageTree::Node(node) => {
+                self.stack.extend(node.get_mut_children());
+                self.next()
+            }
+        })
     }
 }
 

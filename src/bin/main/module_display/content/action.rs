@@ -1,4 +1,3 @@
-
 use super::*;
 
 /// Actions that [Content] can [perform](Content::perform).
@@ -7,5 +6,6 @@ pub enum Action {
     Name(String),
     Id(String),
 
-    Overview(overview::Action)
+    Overview(overview::Action),
+    Description(description::Action),
 }

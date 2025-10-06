@@ -1,3 +1,6 @@
+//! A course in a module.
+
+
 use super::*;
 
 /// A course.
