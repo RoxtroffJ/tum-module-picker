@@ -24,6 +24,21 @@ macro_rules! texter {
     }};
 }
 
+#[macro_export]
+macro_rules! editor_texter {
+    ($module:expr, $editable:expr, $text:ident, $field:ident, $editor_field:ident, $msg:expr) => {{
+        use crate::transparent_text_editor;
+        if let Some(editable) = $editable && editable.$field
+        {
+            <_ as Into<Element<'_, _>>>::into(
+                transparent_text_editor(stringify!($field), &editable.$editor_field).on_action($msg),
+            )
+        } else {
+            $text(&$module.$field).into()
+        }
+    }};
+}
+
 /// Same as [texter] but for non string fields.
 ///
 /// Capable of displaying errors if the parsing is unsuccessful.
@@ -38,7 +53,7 @@ macro_rules! texter {
 /// - msg: Message produced when the text_input is modified.
 #[macro_export]
 macro_rules! non_str_texter {
-    ($module:expr, $editable:expr, $text:ident, $field:ident, $str_field:ident, $err_field:ident, $msg:expr) => {{
+    ($module:expr, $editable:expr, $text:expr, $field:ident, $str_field:ident, $err_field:ident, $msg:expr) => {{
         use crate::*;
         use iced::{widget::{container, horizontal_space}, Length::*};
         if let Some(editable) = $editable
@@ -47,7 +62,7 @@ macro_rules! non_str_texter {
             let editor = row![
                 transparent_text_input(stringify!($field), &editable.$str_field).on_input($msg)
             ]
-            .align_y(Center)
+            .align_y(iced::Alignment::Center)
             .spacing(PADDING);
             match &editable.$err_field {
                 None => editor.into(),

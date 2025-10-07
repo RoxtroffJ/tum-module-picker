@@ -62,7 +62,7 @@ impl Content {
             simple_texter!("Occurence: ", occurence, Action::Occurence),
             simple_texter!("Language: ", language, Action::Language),
             simple_texter!(
-                "Related programs :",
+                "Related programs: ",
                 related_programs,
                 Action::RelatedPrograms
             )

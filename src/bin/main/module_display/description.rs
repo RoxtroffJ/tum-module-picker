@@ -1,5 +1,4 @@
 use iced::{Element, Task};
-use iced_aw::Spinner;
 use tum_module_picker::{
     module::Module,
     storage_tree::{
@@ -13,50 +12,63 @@ use crate::module_display::{
     section::{edit_text_editor, section},
 };
 
-/// Enum representing each different sections.
+/// Struct with the content of each different sections.
 #[derive(Debug)]
-enum SectionContent {
-    General(general::Content),
-    WorkLoad(()),
-    StudyPerf(()),
-    Descr(()),
-    Resp(()),
+struct SectionContent {
+    general: general::Content,
+    workload: workload::Content,
+    study: study::Content,
+    description: description::Content,
+}
+
+impl SectionContent {
+    fn set_all_edits(&mut self, value: bool, module: &Module) {
+        self.general.set_all_edits(value);
+        self.workload.set_all_edits(value, module);
+        self.study.set_all_edits(value, module);
+        self.description.set_all_edits(value, module);
+    }
 }
 
 #[derive(Debug)]
 enum Sections {
-    Description,
-
     General,
     WorkLoad,
     StudyPerf,
     Descr,
-    Resp,
 }
 
-impl ToString for Sections {
+#[derive(Debug)]
+enum SectionTitle {
+    Description,
+    Section(Sections),
+}
+
+impl ToString for SectionTitle {
     fn to_string(&self) -> String {
+        use SectionTitle::*;
         match self {
-            Sections::Description => "Description",
-            Sections::General => "General",
-            Sections::WorkLoad => "Workload",
-            Sections::StudyPerf => "Study and examination performance",
-            Sections::Descr => "Description",
-            Sections::Resp => "Responsible for module",
+            Description => "Description",
+            Section(Sections::General) => "General",
+            Section(Sections::WorkLoad) => "Workload",
+            Section(Sections::StudyPerf) => "Study and examination performance",
+            Section(Sections::Descr) => "Description",
         }
         .to_string()
     }
 }
 
+pub mod description;
 pub mod general;
+pub mod study;
+pub mod workload;
 
 #[derive(Debug, Clone)]
 pub enum Action {
     General(general::Action),
-    WorkLoad(()),
-    StudyPerf(()),
-    Descr(()),
-    Resp(()),
+    WorkLoad(workload::Action),
+    StudyPerf(study::Action),
+    Descr(description::Action),
 
     StorageTree(STAction),
 }
@@ -64,82 +76,138 @@ pub enum Action {
 /// Content of the description section.
 #[derive(Debug)]
 pub struct Content {
-    content: STContent<Sections, SectionContent>,
+    content: STContent<SectionTitle, Sections>,
+    section_content: SectionContent,
 }
 
 impl Content {
     pub fn new() -> Self {
         macro_rules! singular {
-            ($section:ident, $new:expr) => {
+            ($section:ident) => {
                 ST::node(
-                    Sections::$section,
-                    vec![ST::leaf(SectionContent::$section($new))],
+                    SectionTitle::Section(Sections::$section),
+                    vec![ST::leaf(Sections::$section)],
                 )
             };
         }
 
         let tree = ST::node(
-            Sections::Description,
+            SectionTitle::Description,
             vec![
-                singular!(General, general::Content::new()),
-                singular!(WorkLoad, ()),
-                singular!(StudyPerf, ()),
-                singular!(Descr, ()),
-                singular!(Resp, ()),
+                singular!(General),
+                singular!(WorkLoad),
+                singular!(StudyPerf),
+                singular!(Descr),
             ],
         );
 
         Self {
             content: STContent::new(tree).retract_on_select(),
+            section_content: SectionContent {
+                general: general::Content::new(),
+                workload: workload::Content::new(),
+                study: study::Content::new(),
+                description: description::Content::new(),
+            },
         }
     }
 
-    pub fn set_all_edits(&mut self, value: bool, _module: &Module) {
-        self.content
-            .mut_leaf_iter()
-            .map(|x| match x {
-                SectionContent::General(content) => {
-                    content.set_all_edits(value);
-                }
-                SectionContent::WorkLoad(_) => (),
-                SectionContent::StudyPerf(_) => (),
-                SectionContent::Descr(_) => (),
-                SectionContent::Resp(_) => (),
-            })
-            .collect()
+    pub fn set_all_edits(&mut self, value: bool, module: &Module) {
+        self.section_content.set_all_edits(value, module)
     }
 
     pub fn view<'a>(&'a self, module: &'a Module) -> Element<'a, Action> {
         section(
-            |x| Sections::to_string(x),
+            SectionTitle::to_string,
             |x| match x {
-                SectionContent::General(content) => content.view(module).map(Action::General),
-                SectionContent::WorkLoad(_) => Spinner::new().into(),
-                SectionContent::StudyPerf(_) => Spinner::new().into(),
-                SectionContent::Descr(_) => Spinner::new().into(),
-                SectionContent::Resp(_) => Spinner::new().into(),
+                Sections::General => self
+                    .section_content
+                    .general
+                    .view(module)
+                    .map(Action::General),
+                Sections::WorkLoad => self
+                    .section_content
+                    .workload
+                    .view(module)
+                    .map(Action::WorkLoad),
+                Sections::StudyPerf => self
+                    .section_content
+                    .study
+                    .view(module)
+                    .map(Action::StudyPerf),
+                Sections::Descr => self.section_content.description.view(module).map(Action::Descr),
             },
             |x| match x {
-                SectionContent::General(content) => content.get_editable().as_ref().and_then(|e| {
-                    edit_text_editor(e, &e.editor_content, |a| {
-                        Action::General(general::Action::Editor(a))
-                    })
-                }),
-                SectionContent::WorkLoad(_) => None,
-                SectionContent::StudyPerf(_) => None,
-                SectionContent::Descr(_) => None,
-                SectionContent::Resp(_) => None,
+                Sections::General => self
+                    .section_content
+                    .general
+                    .get_editable()
+                    .as_ref()
+                    .and_then(|e| {
+                        edit_text_editor(e, &e.editor_content, |a| {
+                            Action::General(general::Action::Editor(a))
+                        })
+                    }),
+                Sections::WorkLoad => self
+                    .section_content
+                    .workload
+                    .get_editable()
+                    .as_ref()
+                    .and_then(|e| {
+                        edit_text_editor(e, &e.editor, |a| {
+                            Action::WorkLoad(workload::Action::Editor(a))
+                        })
+                    }),
+                Sections::StudyPerf => {
+                    self.section_content
+                        .study
+                        .get_editable()
+                        .as_ref()
+                        .and_then(|e| {
+                            edit_text_editor(e, &e.editor, |a| {
+                                Action::StudyPerf(study::Action::Editor(a))
+                            })
+                        })
+                }
+                Sections::Descr => self.section_content
+                        .description
+                        .get_editable()
+                        .as_ref()
+                        .and_then(|e| {
+                            edit_text_editor(e, &e.editor, |a| {
+                                Action::Descr(description::Action::Editor(a))
+                            })
+                        }),
             },
             |x| match x {
-                SectionContent::General(content) => content
+                Sections::General => self
+                    .section_content
+                    .general
                     .get_editable()
                     .as_ref()
                     .map(Edit::has_one_error)
                     .unwrap_or(false),
-                SectionContent::WorkLoad(_) => false,
-                SectionContent::StudyPerf(_) => false,
-                SectionContent::Descr(_) => false,
-                SectionContent::Resp(_) => false,
+                Sections::WorkLoad => self
+                    .section_content
+                    .workload
+                    .get_editable()
+                    .as_ref()
+                    .map(Edit::has_one_error)
+                    .unwrap_or(false),
+                Sections::StudyPerf => self
+                    .section_content
+                    .study
+                    .get_editable()
+                    .as_ref()
+                    .map(Edit::has_one_error)
+                    .unwrap_or(false),
+                Sections::Descr => self
+                    .section_content
+                    .description
+                    .get_editable()
+                    .as_ref()
+                    .map(Edit::has_one_error)
+                    .unwrap_or(false),
             },
             &self.content,
             Action::StorageTree,
@@ -150,19 +218,27 @@ impl Content {
     pub fn perform(&mut self, action: Action, module: &mut Module) -> Task<Action> {
         match action {
             Action::General(action) => {
-                for sec in self.content.mut_leaf_iter() {
-                    match sec {
-                        SectionContent::General(content) => {
-                            return content.perform(action, module).map(Action::General);
-                        }
-                        _ => (),
-                    }
-                }
+                return self
+                    .section_content
+                    .general
+                    .perform(action, module)
+                    .map(Action::General);
             }
-            Action::WorkLoad(_) => (),
-            Action::StudyPerf(_) => (),
-            Action::Descr(_) => (),
-            Action::Resp(_) => (),
+            Action::WorkLoad(action) => {
+                return self
+                    .section_content
+                    .workload
+                    .perform(action, module)
+                    .map(Action::WorkLoad);
+            }
+            Action::StudyPerf(action) => {
+                return self
+                    .section_content
+                    .study
+                    .perform(action, module)
+                    .map(Action::StudyPerf);
+            }
+            Action::Descr(action) => return self.section_content.description.perform(action, module).map(Action::Descr),
             Action::StorageTree(action) => self.content.perform(action),
         };
 

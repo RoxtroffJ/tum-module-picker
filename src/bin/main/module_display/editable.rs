@@ -27,7 +27,7 @@ macro_rules! editable_maker {
         $name:ident $($derive:ident) *,
         $($fields:ident),* ;
         $($non_str_fields_str:ident $non_str_fields_err:ident $err:ty),* ;
-        $($others:ident $type:ty);*
+        $($others:ident $type:ty);* $(;)?
     ) => {
         #[derive(Debug, $($derive),*)]
         $pub struct $name {
@@ -56,7 +56,7 @@ macro_rules! editable_maker {
         $pub:vis,
         $name:ident $($derive:ident) *,
         $($fields:ident),* ;
-        $($others:ident $type:ty = $val:expr);*
+        $($others:ident $type:ty = $val:expr);* $(;)?
     ) => {
         editable_maker!{$pub, $name $($derive) *, $($fields),* ;; $($others $type);*}
 
@@ -69,51 +69,39 @@ macro_rules! editable_maker {
             }
         }
     };
+
+    (
+        $pub:vis,
+        $name:ident $($derive:ident) *,
+        $($fields:ident),* ;
+        $($non_str_fields_str:ident {$field:ident $to_string:expr} $non_str_fields_err:ident $err:ty),* ;
+        $([$editor_fields:ident {$e_field:ident}]);* $(;)?
+        $($others:ident $type:ty = $val:expr);* $(;)?
+    ) => {
+        editable_maker!{$pub, $name $($derive) *, $($fields),* ;$($non_str_fields_str $non_str_fields_err $err),*; $($editor_fields iced::widget::text_editor::Content;)* $($others $type);*}
+
+        impl $name {
+            pub fn new(module: &tum_module_picker::module::Module) -> Self {
+                Self {
+                    $($fields: false,) *
+
+                    $($non_str_fields_str: $to_string(&module.$field), $non_str_fields_err: None,) *
+
+                    $($editor_fields: iced::widget::text_editor::Content::with_text(&module.$e_field),) *
+
+                    $($others: $val,) *
+                }
+            }
+        }
+    }
 }
 
 editable_maker! {
     pub,
     Editable,
     name, id,
-    courses, exams,
-
-    total_hours, contact_hours, self_study_hours,
-    descr_of_achievement_assessment_methods,
-    exam_retake_next_semester, exam_retake_end_semester, prerequisites,
-    intended_learning_outcomes, content, teaching_and_learning_methods, media, reading_list,
-    responsible_bis ;
-
-    ;
-
+    courses, exams;
 }
-
-impl Editable {
-    /// Creates a new editable.
-    ///
-    /// Takes a reference to module to initialize non string [Module] fields.
-    pub fn new() -> Self {
-        Self {
-            name: false,
-            id: false,
-            courses: false,
-            exams: false,
-            total_hours: false,
-            contact_hours: false,
-            self_study_hours: false,
-            descr_of_achievement_assessment_methods: false,
-            exam_retake_next_semester: false,
-            exam_retake_end_semester: false,
-            prerequisites: false,
-            intended_learning_outcomes: false,
-            content: false,
-            teaching_and_learning_methods: false,
-            media: false,
-            reading_list: false,
-            responsible_bis: false,
-        }
-    }
-}
-
 /// When given an [Editable] option and one or multiple error fields, indicates if there is an error among them.
 #[macro_export]
 macro_rules! is_error {
@@ -215,6 +203,18 @@ macro_rules! set_non_str_field {
                 }
                 Err(err) => editable.$field_error = Some(err),
             }
+        };
+    }};
+}
+
+#[macro_export]
+macro_rules! set_editor_field {
+    ($module:expr, $editable:expr, $action:expr, $field:ident, $editor_field:ident) => {{
+        if let Some(editable) = $editable
+            && editable.$field
+        {
+            editable.$editor_field.perform($action);
+            $module.$field = editable.$editor_field.text()
         };
     }};
 }

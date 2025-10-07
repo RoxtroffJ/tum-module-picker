@@ -54,6 +54,6 @@ impl<'a> From<ModuleDisplay<'a>> for Element<'a, Action> {
         let overview = content.overview_content.view(content).map(Action::Overview);
         let description = content.description_content.view(content).map(Action::Description);
 
-        column![banner, horizontal_rule(PADDING), overview, description].into()
+        column![banner, horizontal_rule(PADDING), content_column![overview, description]].into()
     }
 }

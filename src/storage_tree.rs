@@ -58,7 +58,7 @@ impl<K, T> StorageTree<K, T> {
     }
 
     /// Adds a sub tree at the node pointed by path.
-    /// 
+    ///
     /// If this node does not exist, nothing is done.
     /// If successful, returns a mutable reference to the inserted tree.
     pub fn add(&mut self, other: Self, path: &Path) -> Option<&mut Self> {
@@ -68,12 +68,12 @@ impl<K, T> StorageTree<K, T> {
                 let children = node.get_mut_children();
                 children.push(other);
                 children.last_mut()
-            },
+            }
         })
     }
 
     /// Applies a function to all the keys of the [StorageTree].
-    /// 
+    ///
     /// The function is called once per key, and in an arbitrary order.
     pub fn map_keys<L, F: Fn(K) -> L>(self, f: &F) -> StorageTree<L, T> {
         match self {
@@ -87,7 +87,7 @@ impl<K, T> StorageTree<K, T> {
             ),
         }
     }
-    
+
     /// Iterator on the leafs of a [StorageTree].
     pub fn leaf_iter(&self) -> LeafIterator<'_, K, T> {
         LeafIterator { stack: vec![self] }
@@ -123,7 +123,7 @@ impl<K, T> Node<K, T> {
 
 /// Iterator on leafs of a tree.
 pub struct LeafIterator<'a, K, T> {
-    stack: Vec<&'a StorageTree<K, T>>
+    stack: Vec<&'a StorageTree<K, T>>,
 }
 
 impl<'a, K, T> Iterator for LeafIterator<'a, K, T> {
@@ -142,7 +142,7 @@ impl<'a, K, T> Iterator for LeafIterator<'a, K, T> {
 
 /// Same as [LeafIterator] but yields mutable references.
 pub struct MutLeafIterator<'a, K, T> {
-    stack: Vec<&'a mut StorageTree<K, T>>
+    stack: Vec<&'a mut StorageTree<K, T>>,
 }
 
 impl<'a, K, T> Iterator for MutLeafIterator<'a, K, T> {

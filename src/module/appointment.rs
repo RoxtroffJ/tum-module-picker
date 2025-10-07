@@ -1,3 +1,5 @@
+//! The [Appointment] struct
+
 use super::*;
 
 /// An appointment with date and place.

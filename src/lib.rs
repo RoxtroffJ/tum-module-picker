@@ -7,5 +7,6 @@ pub mod storage_tree;
 //pub mod parsed_input;
 pub mod displayable_option;
 pub mod borrow_map;
+pub mod lines;
 
 pub mod module;

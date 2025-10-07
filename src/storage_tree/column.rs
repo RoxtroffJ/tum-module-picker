@@ -6,9 +6,13 @@ use std::{
 };
 
 use iced::{
-    alignment::Vertical, widget::{button, column, horizontal_space, row}, Element, Length, Pixels
+    Element,
+    Length::{self, Shrink},
+    Pixels,
+    alignment::Vertical,
+    widget::{Space, button, column, horizontal_space, row},
 };
-use iced_fonts::required::{to_text, RequiredIcons};
+use iced_fonts::required::{RequiredIcons, to_text};
 
 use super::*;
 
@@ -18,7 +22,8 @@ pub struct Column<'a, K, T, Message> {
     icons: Option<Icons<'a, Message>>,
     space: f32,
     on_interaction: Box<dyn Fn(Action) -> Message + 'a>,
-    key_to_element: Box<dyn Fn(&'a Node<MetaKey<K, NodeState>, T>, Path) -> Element<'a, Message> + 'a>,
+    key_to_element:
+        Box<dyn Fn(&'a Node<MetaKey<K, NodeState>, T>, Path) -> Element<'a, Message> + 'a>,
     value_to_element: Box<dyn Fn(&'a T, Path) -> Element<'a, Message> + 'a>,
 
     spacing: Pixels,
@@ -35,7 +40,10 @@ impl<K, T> Content<K, T> {
     /// Creates a new [Content]
     pub fn new(storage_tree: StorageTree<K, T>) -> Self {
         let st = storage_tree.map_keys(&|key| MetaKey::new(key, NodeState::new()));
-        Self { st, just_extend_on_select: true }
+        Self {
+            st,
+            just_extend_on_select: true,
+        }
     }
 
     /// Performs an action on the content.
@@ -43,7 +51,14 @@ impl<K, T> Content<K, T> {
         match action {
             Action::Expand(path) => self.set_expanded(&path, true),
             Action::Collapse(path) => self.set_expanded(&path, false),
-            Action::Selected(path) => self.set_expanded(&path, if self.just_extend_on_select {true} else {!self.get_expanded(&path).unwrap_or(true)}),
+            Action::Selected(path) => self.set_expanded(
+                &path,
+                if self.just_extend_on_select {
+                    true
+                } else {
+                    !self.get_expanded(&path).unwrap_or(true)
+                },
+            ),
         }
     }
 
@@ -64,10 +79,13 @@ impl<K, T> Content<K, T> {
     }
 
     /// Makes it so that nodes both expand and collapse when clicked.
-    /// 
+    ///
     /// If this function is not called, they just expand when clicked.
     pub fn retract_on_select(self) -> Self {
-        Self { just_extend_on_select: false, ..self }
+        Self {
+            just_extend_on_select: false,
+            ..self
+        }
     }
 }
 
@@ -152,8 +170,9 @@ impl<'a, K, T, Message> Column<'a, K, T, Message> {
     }
 
     /// Puts default icons for collapsed and expanded.
-    pub fn icons_default<P: Into<Length> + Copy + 'a>(self, padding: P) -> Self 
-    where Message: 'a 
+    pub fn icons_default<P: Into<Length> + Copy + 'a>(self, padding: P) -> Self
+    where
+        Message: 'a,
     {
         self.icon(
             move || {
@@ -181,7 +200,10 @@ impl<'a, K, T, Message> Column<'a, K, T, Message> {
 
     /// Sets the spacing of the inner column.
     pub fn spacing(self, spacing: impl Into<Pixels>) -> Self {
-        Self {spacing: spacing.into(), ..self}
+        Self {
+            spacing: spacing.into(),
+            ..self
+        }
     }
 }
 
@@ -208,11 +230,12 @@ impl<K, T> StorageTree<MetaKey<K, NodeState>, T> {
                 let metakey = node.get_key();
                 let expanded = metakey.get_metadata().expanded;
 
-                let key_element: Element<'_, _> = button(key_to_element(node, current_path.clone()))
-                    .on_press(on_interaction(Action::Selected(current_path.clone())))
-                    .padding(0)
-                    .style(button::text)
-                    .into();
+                let key_element: Element<'_, _> =
+                    button(key_to_element(node, current_path.clone()))
+                        .on_press(on_interaction(Action::Selected(current_path.clone())))
+                        .padding(0)
+                        .style(button::text)
+                        .into();
 
                 let row = match icons {
                     Some(icons) => {
@@ -222,7 +245,9 @@ impl<K, T> StorageTree<MetaKey<K, NodeState>, T> {
                         } else {
                             button((icons.collapsed)())
                                 .on_press(on_interaction(Action::Expand(current_path.clone())))
-                        }.style(button::text).padding(0);
+                        }
+                        .style(button::text)
+                        .padding(0);
                         row![icon, key_element].align_y(Vertical::Center).into()
                     }
                     None => key_element,
@@ -246,8 +271,8 @@ impl<K, T> StorageTree<MetaKey<K, NodeState>, T> {
                         row,
                         row![
                             horizontal_space().width(Length::Fixed(space)),
-                            iced::widget::Column::from_iter(expansion)
-                        ]
+                            iced::widget::Column::from_iter(expansion).spacing(spacing)
+                        ],
                     ]
                     .spacing(spacing)
                     .into()

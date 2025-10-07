@@ -1,5 +1,6 @@
 use iced::advanced;
-use iced::widget::{text_input, TextInput};
+use iced::advanced::text::highlighter::PlainText;
+use iced::widget::{text_input, TextInput, text_editor, TextEditor};
 use iced::{Color, Theme};
 use iced::{
     Element, Font, Task,
@@ -92,6 +93,19 @@ where
 {
     text_input(placeholder, value).style(|theme, status| {
         text_input::Style { background: Color::TRANSPARENT.into(), ..text_input::default(theme, status)}
+    })
+}
+
+/// Transparent [TextEditor]
+pub fn transparent_text_editor<'a, Message>(
+    placeholder: &'a str,
+    content: &'a text_editor::Content,
+) -> TextEditor<'a, PlainText, Message>
+where
+    Message: Clone,
+{
+    text_editor(content).placeholder(placeholder).style(|theme, status| {
+        text_editor::Style { background: Color::TRANSPARENT.into(), ..text_editor::default(theme, status)}
     })
 }
 

@@ -67,7 +67,7 @@ pub fn section<'a, Action: Clone + 'a, K, T: 'a, Label: ToString>(
         },
     )
     .space(MENU_OFFSET)
-    .spacing(PADDING)
+    .spacing(PADDING/2)
     .icons_default(PADDING)
     .into()
 }
