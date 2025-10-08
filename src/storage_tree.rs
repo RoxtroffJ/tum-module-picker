@@ -97,6 +97,26 @@ impl<K, T> StorageTree<K, T> {
     pub fn mut_leaf_iter(&mut self) -> MutLeafIterator<'_, K, T> {
         MutLeafIterator { stack: vec![self] }
     }
+
+    /// Iterator on the keys of a [StorageTree].
+    pub fn key_iter(&self) -> KeyIterator<K, T> {
+        let mut stack = Vec::new();
+        match self {
+            StorageTree::Leaf(_) => (),
+            StorageTree::Node(node) => stack.push(node),
+        }
+        KeyIterator { stack }
+    }
+
+    /// Same as [key_iter](Self::key_iter) but returns mutable references.
+    pub fn mut_key_iter(&mut self) -> MutKeyIterator<K, T> {
+        let mut stack = Vec::new();
+        match self {
+            StorageTree::Leaf(_) => (),
+            StorageTree::Node(node) => stack.push(node),
+        }
+        MutKeyIterator { stack }
+    }
 }
 
 impl<K, T> Node<K, T> {
@@ -145,6 +165,8 @@ pub struct MutLeafIterator<'a, K, T> {
     stack: Vec<&'a mut StorageTree<K, T>>,
 }
 
+
+
 impl<'a, K, T> Iterator for MutLeafIterator<'a, K, T> {
     type Item = &'a mut T;
 
@@ -155,6 +177,44 @@ impl<'a, K, T> Iterator for MutLeafIterator<'a, K, T> {
                 self.stack.extend(node.get_mut_children());
                 self.next()
             }
+        })
+    }
+}
+
+/// Iterator over the keys of a tree.
+pub struct KeyIterator<'a, K, T> {
+    stack: Vec<&'a Node<K, T>>,
+}
+
+impl<'a, K, T> Iterator for KeyIterator<'a, K, T> {
+    type Item = &'a K;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.stack.pop().map(|node| {
+            self.stack.extend(node.get_children().iter().filter_map(|x| match x {
+                StorageTree::Leaf(_) => None,
+                StorageTree::Node(node) => Some(node),
+            }));
+            node.get_key()
+        })
+    }
+}
+
+/// Same as [KeyIterator] but yields mutable references.
+pub struct MutKeyIterator<'a, K, T> {
+    stack: Vec<&'a mut Node<K, T>>,
+}
+
+impl<'a, K, T> Iterator for MutKeyIterator<'a, K, T> {
+    type Item = &'a mut K;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.stack.pop().map(|node| {
+            self.stack.extend(node.children.iter_mut().filter_map(|x| match x {
+                StorageTree::Leaf(_) => None,
+                StorageTree::Node(node) => Some(node),
+            }));
+            &mut node.key
         })
     }
 }

@@ -87,6 +87,11 @@ impl<K, T> Content<K, T> {
             ..self
         }
     }
+
+    /// Expands or collapses all the expandable fields.
+    pub fn expand_all(&mut self, value: bool) {
+        self.st.mut_key_iter().map(|meta_key| meta_key.get_mut_metadata().expanded = value).collect()
+    }
 }
 
 struct Icons<'a, Message> {

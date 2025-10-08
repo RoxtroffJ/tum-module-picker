@@ -10,7 +10,7 @@ use iced::{
 };
 use tum_module_picker::{lines::Lines, module::Module, sectioned_lines::get_sections};
 
-use crate::{module_display::Edit, *};
+use crate::{module_display::{Edit, Resetable}, *};
 
 /// The content of the description.
 #[derive(Debug)]
@@ -164,6 +164,11 @@ impl Content {
         }
 
         Task::none()
+    }
+
+    /// Resets the fields to match those of the given [Module].
+    pub fn reset(&mut self, module: &Module) {
+        self.content.as_mut().map(|x| x.reset(module));
     }
 }
 

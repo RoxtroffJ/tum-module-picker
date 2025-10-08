@@ -6,7 +6,7 @@ use iced::{widget::{row, text_editor}, Element, Task, Alignment::Center};
 use time::Duration;
 use tum_module_picker::{module::Module, sectioned_lines::get_sections};
 
-use crate::{set_non_str_field, content_column, editable_maker, module_display::Edit, non_str_texter, bald_text};
+use crate::{bald_text, content_column, editable_maker, module_display::{Edit, Resetable}, non_str_texter, set_non_str_field};
 
 /// Content of the workload section.
 #[derive(Debug)]
@@ -89,6 +89,11 @@ impl Content {
         };
 
         return Task::none();
+    }
+
+    /// Resets the fields to match those of the given [Module].
+    pub fn reset(&mut self, module: &Module) {
+        self.content.as_mut().map(|x| x.reset(module));
     }
 }
 

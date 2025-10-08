@@ -1,15 +1,8 @@
+use tum_module_picker::module::Module;
+
 use super::*;
 
 pub trait Edit {
-    /// Makes all the fields editable or not and returns self.
-    fn with_all(mut self, value: bool) -> Self
-    where
-        Self: Sized,
-    {
-        self.set_all(value);
-        self
-    }
-
     /// Makes all the fields editable or not.
     fn set_all(&mut self, value: bool);
 
@@ -18,6 +11,12 @@ pub trait Edit {
 
     /// Indicates if at least one of the non string fields has a parsing error.
     fn has_one_error(&self) -> bool;
+}
+
+/// Indicates whether there is a reset function.
+pub trait Resetable {
+    /// Resets the inputs. Whether they are editable or not does not change.
+    fn reset(&mut self, module: &Module);
 }
 
 #[macro_export]
@@ -68,6 +67,12 @@ macro_rules! editable_maker {
                 }
             }
         }
+
+        impl crate::module_display::Resetable for $name {
+            fn reset(&mut self, _module: &tum_module_picker::module::Module) {
+                $(self.$others = $val;) *
+            }
+        }
     };
 
     (
@@ -91,6 +96,17 @@ macro_rules! editable_maker {
 
                     $($others: $val,) *
                 }
+            }
+        }
+
+        impl crate::module_display::Resetable for $name {
+            fn reset(&mut self, module: &tum_module_picker::module::Module) {
+                
+                $(self.$non_str_fields_str = $to_string(&module.$field); self.$non_str_fields_err = None;) *
+
+                $(self.$editor_fields = iced::widget::text_editor::Content::with_text(&module.$e_field);) *
+
+                $(self.$others = $val;) *
             }
         }
     }

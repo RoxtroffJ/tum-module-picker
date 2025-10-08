@@ -9,4 +9,6 @@ pub mod displayable_option;
 pub mod borrow_map;
 pub mod lines;
 
+pub mod window_stack;
+
 pub mod module;

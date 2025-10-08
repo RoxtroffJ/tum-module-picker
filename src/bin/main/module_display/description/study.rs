@@ -6,7 +6,7 @@ use std::{
 
 use crate::{
     bald_text, content_column, editable_maker, editor_texter,
-    module_display::Edit,
+    module_display::{Edit, Resetable},
     non_str_texter, set_editor_field, set_non_str_field,
 };
 use iced::{
@@ -152,6 +152,11 @@ impl Content {
             Action::Editor(action) => return perform_editor(&mut self.content, action),
         }
         Task::none()
+    }
+
+    /// Resets the fields to match those of the given [Module].
+    pub fn reset(&mut self, module: &Module) {
+        self.content.as_mut().map(|x| x.reset(module));
     }
 }
 

@@ -21,12 +21,27 @@ struct SectionContent {
     description: description::Content,
 }
 
+macro_rules! apply_to_all {
+    ($content:expr => $method:ident($($arg:expr),* $(,)?)) => {{
+        $content.general.$method($($arg),*);
+        $content.workload.$method($($arg),*);
+        $content.study.$method($($arg),*);
+        $content.description.$method($($arg),*);
+    }};
+}
+
 impl SectionContent {
     fn set_all_edits(&mut self, value: bool, module: &Module) {
-        self.general.set_all_edits(value);
-        self.workload.set_all_edits(value, module);
-        self.study.set_all_edits(value, module);
-        self.description.set_all_edits(value, module);
+        {
+            self.general.set_all_edits(value);
+            self.workload.set_all_edits(value, module);
+            self.study.set_all_edits(value, module);
+            self.description.set_all_edits(value, module);
+        }
+    }
+
+    fn reset(&mut self, module: &Module) {
+        apply_to_all!(self => reset(module))
     }
 }
 
@@ -135,7 +150,11 @@ impl Content {
                     .study
                     .view(module)
                     .map(Action::StudyPerf),
-                Sections::Descr => self.section_content.description.view(module).map(Action::Descr),
+                Sections::Descr => self
+                    .section_content
+                    .description
+                    .view(module)
+                    .map(Action::Descr),
             },
             |x| match x {
                 Sections::General => self
@@ -169,15 +188,16 @@ impl Content {
                             })
                         })
                 }
-                Sections::Descr => self.section_content
-                        .description
-                        .get_editable()
-                        .as_ref()
-                        .and_then(|e| {
-                            edit_text_editor(e, &e.editor, |a| {
-                                Action::Descr(description::Action::Editor(a))
-                            })
-                        }),
+                Sections::Descr => self
+                    .section_content
+                    .description
+                    .get_editable()
+                    .as_ref()
+                    .and_then(|e| {
+                        edit_text_editor(e, &e.editor, |a| {
+                            Action::Descr(description::Action::Editor(a))
+                        })
+                    }),
             },
             |x| match x {
                 Sections::General => self
@@ -238,10 +258,26 @@ impl Content {
                     .perform(action, module)
                     .map(Action::StudyPerf);
             }
-            Action::Descr(action) => return self.section_content.description.perform(action, module).map(Action::Descr),
+            Action::Descr(action) => {
+                return self
+                    .section_content
+                    .description
+                    .perform(action, module)
+                    .map(Action::Descr);
+            }
             Action::StorageTree(action) => self.content.perform(action),
         };
 
         Task::none()
+    }
+
+    /// Resets the fields to match those of the given [Module].
+    pub fn reset(&mut self, module: &Module) {
+        self.section_content.reset(module);
+    }
+
+    /// Expands or collapses all the collapsable pannels.
+    pub fn expand(&mut self, value: bool) {
+        self.content.expand_all(value);
     }
 }

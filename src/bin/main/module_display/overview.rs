@@ -19,7 +19,7 @@ use tum_module_picker::{
 
 use crate::{
     bald_text, content_column,
-    module_display::{Edit, section::*},
+    module_display::{Edit, Resetable, section::*},
     non_str_texter, set_non_str_field, set_str_field, texter,
 };
 
@@ -190,7 +190,11 @@ impl Content {
                 ]
                 .into()
             },
-            |editable| editable.as_ref().and_then(|e| edit_text_editor(e, &e.overview_content, Action::Editor)),
+            |editable| {
+                editable
+                    .as_ref()
+                    .and_then(|e| edit_text_editor(e, &e.overview_content, Action::Editor))
+            },
             |editable| editable.as_ref().map(Edit::has_one_error).unwrap_or(false),
             self,
             Action::StorageTree,
@@ -278,6 +282,19 @@ impl Content {
         };
 
         Task::none()
+    }
+
+    /// Resets the fields to match the given module.
+    pub fn reset(&mut self, module: &Module) {
+        self.overview_content
+            .mut_leaf_iter()
+            .map(|x| x.as_mut().map(|x| x.reset(module)).unwrap_or_default())
+            .collect()
+    }
+
+    /// Expands or collapses all the expandable fields.
+    pub fn expand_all(&mut self, value: bool) {
+        self.overview_content.expand_all(value);
     }
 }
 

@@ -7,7 +7,7 @@ use iced::{
 use tum_module_picker::{module::Module, sectioned_lines::get_sections};
 
 use crate::{
-    bald_text, content_column, editable_maker, module_display::Edit, set_str_field, texter,
+    bald_text, content_column, editable_maker, module_display::{Edit, Resetable}, set_str_field, texter,
 };
 
 /// Content of the general section.
@@ -110,6 +110,11 @@ impl Content {
         self.get_mut_editable()
             .get_or_insert(Editable::new())
             .set_all(value)
+    }
+
+    /// Resets the fields to match those of the given [Module].
+    pub fn reset(&mut self, module: &Module) {
+        self.content.as_mut().map(|x| x.reset(module));
     }
 }
 

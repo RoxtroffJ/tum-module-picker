@@ -3,8 +3,7 @@
 use super::*;
 use iced::Task;
 use std::{
-    borrow::{Borrow, BorrowMut},
-    ops::{Deref, DerefMut},
+    borrow::{Borrow, BorrowMut}, mem, ops::{Deref, DerefMut}
 };
 use tum_module_picker::module::Module;
 
@@ -53,6 +52,25 @@ impl Content {
         }
 
         self.editable.get_or_insert(Editable::new()).set_all(value);
+    }
+
+    /// Takes the content and returns the module.
+    pub fn take_module(self) -> Module {
+        self.module
+    }
+
+    /// Replaces the module by given one.
+    pub fn replace_module(&mut self, module: Module) -> Module {
+        self.overview_content.reset(&module);
+        self.description_content.reset(&module);
+        let module = mem::replace(&mut self.module, module);
+        module
+    }
+
+    /// Expands or collapses all the expandable fields.
+    pub fn expand_all(&mut self, value: bool) {
+        self.overview_content.expand_all(value);
+        self.description_content.expand(value);
     }
 }
 
